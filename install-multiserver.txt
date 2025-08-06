@@ -47,6 +47,10 @@ yum install -y nfs-utils nc
 
 rpm -q nfs-utils
 
+if fail, use local:
+cd /path/to/copied/rpms
+sudo yum localinstall *.rpm
+
 which nc
 
 sudo mkdir /home/smile/rpm
@@ -137,6 +141,7 @@ php artisan config:clear
 php artisan config:cache
 php artisan route:clear
 php artisan view:clear
+php artisan optimize:clear
 
 Run:
 php artisan tinker
@@ -222,6 +227,8 @@ php artisan route:clear
 php artisan view:clear
 
 php artisan storage:link
+
+php artisan optimize:clear
 
 ----------
 
