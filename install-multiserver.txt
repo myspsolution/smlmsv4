@@ -1,0 +1,244 @@
+nginx server
+
+ss -tulpn | grep nginx
+
+firewall-cmd --get-default-zone
+-> usually public
+
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
+
+check:
+sudo firewall-cmd --list-all
+Make sure contains:
+http https ssh
+
+sudo firewall-cmd --get-active-zones
+-> usually "public"
+
+SELinux:
+sudo getsebool -a | grep httpd
+
+Make sure:
+httpd_can_network_connect --> on
+# httpd_can_network_connect_db --> on
+httpd_use_nfs --> off
+
+sudo setsebool -P httpd_can_network_connect on
+sudo setsebool -P httpd_can_network_connect_db on
+sudo setsebool -P httpd_enable_homedirs on
+sudo setsebool -P httpd_can_network_relay on
+sudo setsebool -P use_nfs_home_dirs on
+sudo setsebool -P httpd_use_nfs on
+sudo setsebool -P httpd_can_sendmail on
+
+sudo getsebool -a | grep httpd
+
+------------
+
+App server 1,2,3:
+
+sudo systemctl stop httpd
+
+sudo systemctl disable httpd
+
+yum install -y nfs-utils nc
+
+rpm -q nfs-utils
+
+which nc
+
+sudo mkdir /home/smile/rpm
+
+copy files to /home/smile/rpm
+
+cd /home/smile/rpm
+
+sudo yum localinstall *.rpm
+
+check:
+
+rpm -q nfs-utils
+
+which nc
+
+---------
+
+ncat -zvw10 "${HOST}" "${PORT}"
+
+-----------
+
+nfs-utils
+
+sudo systemctl start nfs-server
+sudo systemctl enable nfs-server
+
+sudo systemctl start rpcbind
+sudo systemctl enable rpcbind
+
+sudo systemctl start nfs-lock
+sudo systemctl enable nfs-lock
+
+sudo systemctl start nfs-idmapd
+sudo systemctl enable nfs-idmapd
+
+sudo vi /etc/exports
+
+/path/to/share client_ip(rw,sync,no_root_squash,no_subtree_check)
+
+Add (example)
+
+/home/smile/storage/app 192.168.0.0/16(rw,sync,no_root_squash,no_subtree_check,anonuid=1000,anongid=1000)
+
+where 1000 obtained from:
+id smile
+
+firewall-cmd --permanent --add-service=nfs
+firewall-cmd --permanent --add-service=mountd
+firewall-cmd --permanent --add-service=rpc-bind
+firewall-cmd --reload
+
+sudo exportfs -a
+
+OR
+
+sudo exportfs -r
+
+WHEN edited
+
+---------
+
+App server:
+
+yum install -y nfs-utils nc
+
+sudo chown -R smile:smile /home/smile
+
+cd /home/$ORANGT_USER
+cp .env .env.2025-08-06
+vi .env
+
+Change/modify:
+
+APP_URL=https://.....
+APP_DOMAIN=....
+
+DB_CONNECTION=mysql
+DB_HOST=172.25.186.94
+DB_PORT=3306
+DB_DATABASE=db_bsi_dev
+DB_USERNAME=user_bsi_dev
+DB_PASSWORD='ymmFTDejs37Qb89q39xSMMFOZD6bAQ=='
+
+DB_CONNECTION=mysql
+DB_HOST=192.168.154.143
+DB_PORT=3306
+DB_DATABASE=db_bsi_local
+DB_USERNAME=user_bsi_local
+DB_PASSWORD='HIs0fY6b717N0rbpi2b00EXPuUdkl2mSWCmSSQM1Hw8='
+
+# test DB_CONNECTION
+cd /home/smile
+php artisan config:clear
+php artisan config:cache
+php artisan route:clear
+php artisan view:clear
+
+Run:
+php artisan tinker
+
+DB::connection()->getPdo();
+
+exit();
+
+or
+
+[CTRL+D]
+
+On .env edit, when not = database:
+
+CACHE_DRIVER=database
+QUEUE_CONNECTION=database
+SESSION_DRIVER=database
+
+php artisan config:clear
+php artisan config:cache
+
+php artisan cache:table
+php artisan migrate
+
+php artisan queue:table
+php artisan migrate
+
+php artisan session:table
+php artisan migrate
+
+NFS client:
+
+sudo mkdir -p /mnt/shared-storage-app
+sudo umount /mnt/shared-storage-app
+
+change 192.168.154.138 to NFS server IP
+
+sudo mount -t nfs 192.168.154.138:/home/smile/storage/app /mnt/shared-storage-app
+
+test :
+
+echo "test nfs 4" > /mnt/shared-storage-app/testnfs4.txt
+
+sudo cp /etc/php-fpm.d/www.conf /etc/php-fpm.d/www.conf.2025-08-06
+sudo vi /etc/php-fpm.d/www.conf
+
+edit/change:
+
+user = smile
+group = smile
+
+listen = 127.0.0.1:9000
+
+sudo systemctl restart php-fpm
+
+sudo firewall-cmd --permanent --add-port=9000/tcp
+
+sudo firewall-cmd --reload
+
+sudo setsebool -P httpd_can_network_connect on
+sudo setsebool -P httpd_can_network_connect_db on
+sudo setsebool -P httpd_enable_homedirs on
+sudo setsebool -P httpd_can_network_relay on
+sudo setsebool -P use_nfs_home_dirs on
+sudo setsebool -P httpd_use_nfs on
+sudo setsebool -P httpd_can_sendmail on
+
+cp /home/smile/config/filesystems.php /home/smile/config/filesystems.php.2025-08-06
+vi /home/smile/config/filesystems.php
+
+change:
+
+'local' => [
+'driver' => 'local',
+'root' => '/mnt/shared-storage-app',
+],
+
+php artisan config:clear
+php artisan config:cache
+php artisan route:clear
+php artisan view:clear
+
+----------
+
+Mysql Server
+
+yum install -y nc
+
+sudo find / -name *my*.cnf -type f
+
+make sure:
+bind-address            = 0.0.0.0
+
+check firewall:
+sudo firewall-cmd --list-all
+
+sudo firewall-cmd --permanent --add-port=3306/tcp
+sudo firewall-cmd --reload
