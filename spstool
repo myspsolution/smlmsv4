@@ -1,0 +1,21 @@
+#!/bin/bash
+#/usr/local/bin/spstool
+
+PARAM1=""
+if [ ! -z "$1" ]; then
+  PARAM1="$1"
+fi
+
+PARAM2=""
+if [ ! -z "$2" ]; then
+  PARAM2="$2"
+fi
+
+PARAM3=""
+if [ ! -z "$3" ]; then
+  PARAM3="$3"
+fi
+
+if [ -f /home/smile/spstool.sh ]; then
+  bash /home/smile/spstool.sh "${PARAM1}" "${PARAM2}" "${PARAM3}"
+fi

@@ -125,18 +125,11 @@ APP_URL=https://.....
 APP_DOMAIN=....
 
 DB_CONNECTION=mysql
-DB_HOST=172.25.186.94
+DB_HOST=x.x.x.x
 DB_PORT=3306
-DB_DATABASE=db_bsi_dev
-DB_USERNAME=user_bsi_dev
-DB_PASSWORD='ymmFTDejs37Qb89q39xSMMFOZD6bAQ=='
-
-DB_CONNECTION=mysql
-DB_HOST=192.168.154.143
-DB_PORT=3306
-DB_DATABASE=db_bsi_local
-DB_USERNAME=user_bsi_local
-DB_PASSWORD='HIs0fY6b717N0rbpi2b00EXPuUdkl2mSWCmSSQM1Hw8='
+DB_DATABASE=db_name
+DB_USERNAME=db_username
+DB_PASSWORD='XXXXXXXXXXXXXXXX'
 
 # test DB_CONNECTION
 cd /home/smile
@@ -225,6 +218,8 @@ php artisan config:clear
 php artisan config:cache
 php artisan route:clear
 php artisan view:clear
+
+php artisan storage:link
 
 ----------
 
