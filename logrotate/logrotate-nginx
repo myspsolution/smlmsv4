@@ -1,0 +1,15 @@
+/var/log/nginx/*.log {
+    create 644 www-data www-data
+    daily
+    dateext
+    dateformat .%Y-%m-%d
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    sharedscripts
+    postrotate
+        invoke-rc.d nginx rotate >/dev/null 2>&1
+    endscript
+}

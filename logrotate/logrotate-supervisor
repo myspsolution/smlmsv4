@@ -1,0 +1,12 @@
+/var/log/supervisor/*.log {
+    su root adm
+    create 644 root adm
+    daily
+    dateext
+    dateformat .%Y-%m-%d
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+}

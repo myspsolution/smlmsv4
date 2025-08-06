@@ -1,0 +1,18 @@
+/var/log/php8.2-fpm.log {
+    su root adm
+    create 644 root adm
+    daily
+    dateext
+    dateformat .%Y-%m-%d
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    sharedscripts
+    postrotate
+      if [ -x /usr/lib/php/php8.2-fpm-reopenlogs ]; then
+        /usr/lib/php/php8.2-fpm-reopenlogs;
+      fi
+    endscript
+}
