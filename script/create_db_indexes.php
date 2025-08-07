@@ -59,6 +59,7 @@ if (is_file($arg)) {
     $envFilePath = realpath($arg);
 } else {
     $possiblePaths = [
+        "/home/{$arg}/public_html/.env",
         "/var/www/html/{$arg}/.env",
         "/var/www/html/{$arg}.backend/.env",
     ];

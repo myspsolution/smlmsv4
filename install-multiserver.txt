@@ -161,17 +161,21 @@ On .env edit, when not = database:
 CACHE_DRIVER=database
 QUEUE_CONNECTION=database
 SESSION_DRIVER=database
+QUEUE_FAILED_DRIVER=database
 
 php artisan config:clear
 php artisan config:cache
-
-php artisan cache:table
-php artisan migrate
 
 php artisan queue:table
 php artisan migrate
 
 php artisan session:table
+php artisan migrate
+
+php artisan cache:table
+php artisan migrate
+
+php artisan queue:failed-table
 php artisan migrate
 
 NFS client:

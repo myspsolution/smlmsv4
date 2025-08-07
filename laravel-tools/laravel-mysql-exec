@@ -1,0 +1,238 @@
+#!/bin/bash
+# laravel-mysql-exec
+# prepared by dicky@bitzen19.com
+# last update: May 6th, 2021
+
+if ! mysql --version > /dev/null 2>&1; then
+  echo ""
+  echo "mysql is not installed."
+  echo "Please install mysql (at least client) before running this script."
+  echo ""
+  exit
+fi
+
+SOURCE_DIR=$(dirname "$0")
+
+# default project folder
+PROJECT_ROOT_FOLDER=/var/www/html
+
+if [ ! -d "$PROJECT_ROOT_FOLDER" ]; then
+  PROJECT_ROOT_FOLDER=/var/www
+fi
+
+# overwrite PROJECT_ROOT_FOLDER from file "laravel-setting.env" at the same folder if exists
+if [ -f "$SOURCE_DIR/laravel-setting.env" ]; then
+  . "$SOURCE_DIR/laravel-setting.env"
+fi
+
+if [ ! -d "$PROJECT_ROOT_FOLDER" ]; then
+  echo ""
+  echo "Can not find project root folder: $PROJECT_ROOT_FOLDER"
+  if [ ! -f "$SOURCE_DIR/laravel-setting.env" ]; then
+    echo ""
+    echo "The defaut project root folder is: $PROJECT_ROOT_FOLDER"
+    echo "if you want to change defaut project root folder, do the following:"
+    echo "1. create file: $SOURCE_DIR/laravel-setting.env"
+    echo "2. add line:"
+    echo "   PROJECT_ROOT_FOLDER=[ your project root ]"
+    echo "3. Save the file."
+    echo "4. Re-run this script"
+  fi
+  echo ""
+  exit
+fi
+
+PROJECT_DIRS_COUNT=$(find "$PROJECT_ROOT_FOLDER" -mindepth 1 -maxdepth 1 -type d | wc -l)
+if [ $PROJECT_DIRS_COUNT -eq 0 ]; then
+  echo ""
+  echo "No subfolder found under project root folder:"
+  echo "$PROJECT_ROOT_FOLDER"
+  echo ""
+  exit
+fi
+
+ENV_FILES_COUNT=$(find "$PROJECT_ROOT_FOLDER" -mindepth 2 -maxdepth 2 -type f -name .env | wc -l)
+
+if [ $ENV_FILES_COUNT -eq 0 ]; then
+  echo ""
+  echo "No .env files found under project root folder:"
+  echo "$PROJECT_ROOT_FOLDER"
+  echo ""
+  exit
+fi
+
+ENV_FILES=$(find "$PROJECT_ROOT_FOLDER" -mindepth 2 -maxdepth 2 -type f -name .env)
+
+if [ -z "$1" ]; then
+  echo ""
+  echo "USAGE:"
+  echo "laravel-mysql-exec [project-dir] \"[SQL statement string]\""
+  echo ""
+  echo " *[project-dir] must be subfolder of $PROJECT_ROOT_FOLDER"
+  echo "**[SQL statement string] must be enclosed with double quotes \"...\""
+  echo ""
+  echo "example(s):"
+
+  find ${ENV_FILES} |
+  while read filename
+    do
+      PROJECT_DIR1=$(dirname "$filename" | xargs basename)
+      echo "laravel-mysql-exec $PROJECT_DIR1 \"SELECT COUNT(*) FROM tablename\""
+    done
+
+  echo ""
+  exit
+fi
+
+PROJECT_DIR="$1"
+if [ ! -d "$PROJECT_ROOT_FOLDER/$PROJECT_DIR" ]; then
+  echo ""
+  echo "Can not find project dir: "$PROJECT_ROOT_FOLDER/$PROJECT_DIR""
+  echo ""
+  echo "correct example(s):"
+
+  find ${ENV_FILES} |
+  while read filename
+    do
+      PROJECT_DIR1=$(dirname "$filename" | xargs basename)
+      echo "laravel-mysql-exec $PROJECT_DIR1 \"SELECT COUNT(*) FROM tablename\""
+    done
+  echo ""
+  exit
+fi
+
+if [ -z "$2" ]; then
+  echo ""
+  echo "SQL statement must be specified after project dir."
+  echo "example(s):"
+
+  find ${ENV_FILES} |
+  while read filename
+    do
+      PROJECT_DIR1=$(dirname "$filename" | xargs basename)
+      echo "laravel-mysql-exec $PROJECT_DIR1 \"SELECT COUNT(*) FROM tablename\""
+    done
+
+  echo ""
+  exit
+fi
+
+if [ $(echo "$2" | egrep -i '\s*drop\s+database' | wc -l) -ne 0 ]; then
+  echo ""
+  echo "SQL statement MUST NOT contain \"DROP DATABASE ...\" statement:"
+  echo ""
+  exit
+fi
+
+if [ $(echo $2 | egrep -i '\s*drop\s+table' | wc -l) -ne 0 ]; then
+  echo ""
+  echo "SQL statement MUST NOT contain \"DROP TABLE ...\" statement:"
+  echo ""
+  exit
+fi
+
+ENV_FILE="$PROJECT_ROOT_FOLDER/$PROJECT_DIR/.env"
+
+if [ ! -f  "$ENV_FILE" ]; then
+  echo ""
+  echo "Can not find laravel project .env file:"
+  echo "$ENV_FILE"
+  echo ""
+  exit
+fi
+
+if [ "$(file -b --mime-type $ENV_FILE)" != "text/plain" ]; then
+  echo ""
+  echo ".env file must be in text format:"
+  echo "$ENV_FILE"
+  echo ""
+  exit
+fi
+
+# script started here
+
+# ExtractEnvValue [key] [.env file]
+function ExtractEnvValue() {
+  if [ -z $1 ]; then
+    echo ""
+  else
+    if [ -z $2 ]; then
+      echo ""
+    else
+      if [ -f $2 ]; then
+        echo $(sed -n "s/^$1[ ]*=//p" $2 | xargs)
+      else
+        echo ""
+      fi
+    fi
+  fi
+}
+
+DB_CONNECTION=$(ExtractEnvValue DB_CONNECTION "$ENV_FILE")
+if [ $DB_CONNECTION != "mysql" ]; then
+  echo ""
+  echo ".env file: $ENV_FILE"
+  echo "DB_CONNECTION value must be: mysql"
+  echo "Detected DB_CONNECTION: $DB_CONNECTION"
+  echo ""
+  exit
+fi
+
+DB_HOST=$(ExtractEnvValue DB_HOST "$ENV_FILE")
+DB_PORT=$(ExtractEnvValue DB_PORT "$ENV_FILE")
+DB_DATABASE=$(ExtractEnvValue DB_DATABASE "$ENV_FILE")
+DB_USERNAME=$(ExtractEnvValue DB_USERNAME "$ENV_FILE")
+DB_PASSWORD=$(ExtractEnvValue DB_PASSWORD "$ENV_FILE")
+
+if [ -z "$DB_HOST" ]; then
+  echo ""
+  echo ".env file: $ENV_FILE"
+  echo "DB_HOST must be set."
+  echo ""
+  exit
+fi
+
+if [ -z "$DB_PORT" ]; then
+  echo ""
+  echo ".env file: $ENV_FILE"
+  echo "DB_PORT must be set."
+  echo ""
+  exit
+fi
+
+if [ -z "$DB_DATABASE" ]; then
+  echo ""
+  echo ".env file: $ENV_FILE"
+  echo "DB_DATABASE must be set."
+  echo ""
+  exit
+fi
+
+if [ -z "$DB_USERNAME" ]; then
+  echo ""
+  echo ".env file: $ENV_FILE"
+  echo "DB_USERNAME must be set."
+  echo ""
+  exit
+fi
+
+echo ""
+
+# export DB_PASSWORD as MYSQL_PWD global var so mysqldump doesn't ask for pass word
+export MYSQL_PWD="$DB_PASSWORD"
+
+# run mysql to test connection with previous set params
+mysql -h "$DB_HOST" -u "$DB_USERNAME" --port "$DB_PORT" -e "$2" "$DB_DATABASE"
+
+if [ "$?" -ne 0 ]; then
+  # contains error
+  echo ""
+  echo "ERROR: Can not execute SQL statement:"
+  echo "$2"
+  echo "on database \"$DB_DATABASE\" at host \"$DB_HOST\""
+fi
+
+# reset MYSQL_PWD global var
+export MYSQL_PWD=""
+
+echo ""
